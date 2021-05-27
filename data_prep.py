@@ -78,7 +78,7 @@ def get_most_frequent_categ(row, order_items, products):
     try:
         return products_client.product_category_name.value_counts().index[0]
     except:
-        print('fail')
+        # print('fail')
         if len(products_client.product_category_name.value_counts().index) > 1:
             return products_client.product_category_name.value_counts().index[1]
         else :
