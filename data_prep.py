@@ -55,7 +55,10 @@ def get_frequency(row):
     Calcul du nombre de commandes par mois entre la première commande
     et la date virtuelle.
     """
-    return row.nb_orders / row.days_since_first_order * 365.25 / 12
+    if row.days_since_first_order == 0:
+        return row.nb_orders * 365.25 / 12
+    else:
+        return row.nb_orders / row.days_since_first_order * 365.25 / 12
 
 
 def get_sum_orders(row, order_items):
@@ -76,11 +79,11 @@ def get_most_frequent_categ(row, order_items, products):
     products_client = products[products.index.isin(products_ids)]
 
     try:
-        return products_client.product_category_name.value_counts().index[0]
+        return products_client.product_category_name_english.value_counts().index[0]
     except:
         # print('fail')
-        if len(products_client.product_category_name.value_counts().index) > 1:
-            return products_client.product_category_name.value_counts().index[1]
+        if len(products_client.product_category_name_english.value_counts().index) > 1:
+            return products_client.product_category_name_english.value_counts().index[1]
         else :
             return np.nan
         
@@ -150,7 +153,22 @@ def main(virtual_date='default'):
     products_categ_traduction = pd.read_csv('data/product_category_name_translation.csv')
     # Récupération traduction en anglais
     products = products.merge(products_categ_traduction, how='left').set_axis(products.index)
-
+    
+    reduce_cardinality = open("reduce_cardinality.json", "r")
+    reduce_cardinality = reduce_cardinality.read()
+    reduce_cardinality = json.loads(reduce_cardinality)
+    
+    for i in range(4):
+        # A faire plusieurs fois pour qu'il soit totalement efficace
+        products.product_category_name_english = products.product_category_name_english.replace(reduce_cardinality)
+    products.product_category_name_english = products.product_category_name_english.fillna('other')
+    
+    
+    categs_full = ['health_beauty', 'arts_and_craftmanship', 'sports_leisure', 'baby',
+                   'home_confort', 'culture', 'watches_gifts_toys', 'furniture',
+                   'home_construction', 'electronics', 'fashion', 'auto', 'pet_shop',
+                   'industry', 'other', 'food_drink']
+    payment_types_full = ['voucher', 'credit_card', 'cash', 'debit_card']
     # On se fixe à une date et on filtre les données après celle ci
     if virtual_date == 'default':
         virtual_date = orders.order_purchase_timestamp.max()
@@ -198,21 +216,7 @@ def main(virtual_date='default'):
                                             order_items=order_items,
                                             products=products,
                                             axis=1)
-    data = data.merge(products_categ_traduction, 
-                      how='left', 
-                      left_on='favourite_category', 
-                      right_on='product_category_name').set_axis(data.index)
-    
-    data.drop(columns=['product_category_name'], inplace=True)
-    data.rename(columns={'product_category_name_english':'favourite_category_english'}, inplace=True)
-    
-    reduce_cardinality = open("reduce_cardinality.json", "r")
-    reduce_cardinality = reduce_cardinality.read()
-    reduce_cardinality = json.loads(reduce_cardinality)
-    
-    for i in range(4):
-        # A faire plusieurs fois pour qu'il soit totalement efficace
-        data.favourite_category_english = data.favourite_category_english.replace(reduce_cardinality)
+    data.favourite_category = data.favourite_category.fillna('other')
     
     
     # Nombre d'avis postés et note moyenne⭐
@@ -257,23 +261,39 @@ def main(virtual_date='default'):
     
     # Conversion des données catégoriques en données numériques
     data = pd.concat([data, 
-                      pd.get_dummies(data.favourite_category_english), 
+                      pd.get_dummies(data.favourite_category), 
                       pd.get_dummies(data.favourite_payment_type)
                       ],
                      axis=1)
+    # Pour assurer la robustesse de l'algo en variant virtual_date 
+    # on ajoute les colonnes absentes remplies de zeros
+    cols_to_add = []
+    for col_mandatory in categs_full + payment_types_full:
+        if col_mandatory not in data.columns:
+            cols_to_add.append(col_mandatory)
+    for col_to_add in cols_to_add:
+        data[col_to_add] = np.zeros([len(data)])
     
     # Suppression des colonnes qui ne sont pas utiles pour la modélisation
     data.drop(columns=['orders_ids', 
-                       'favourite_category', 
-                       'favourite_category_english', 
+                       'favourite_category',
                        'favourite_payment_type'],
               inplace=True)
+    
+    data = data[['nb_orders', 'days_since_first_order', 'days_since_last_order',
+                 'frequency', 'sum_orders', 'nb_reviews', 'average_review_score',
+                 'average_delivery_time', 'delay_rate', 'advance_rate',
+                 'cancelation_rate', 'baby', 'electronics', 'fashion', 'furniture',
+                 'health_beauty', 'home_confort', 'industry', 'other', 'pet_shop',
+                 'sports_leisure', 'watches_gifts_toys', 'arts_and_craftmanship', 'culture',
+                 'home_construction', 'auto', 'food_drink', 'cash', 'credit_card',
+                 'debit_card', 'voucher']]
     
     return data
     
     
 if __name__ == '__main__':
-    main()    
+    main(pd.Timestamp(2017, 1, 15))
     
     
     
