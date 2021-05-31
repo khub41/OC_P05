@@ -148,7 +148,7 @@ def main(virtual_date='default'):
     products = pd.read_csv('data/olist_products_dataset.csv', index_col='product_id', na_values=np.nan)
     customers = pd.read_csv('data/olist_customers_dataset.csv')
     reviews = pd.read_csv('data/olist_order_reviews_dataset.csv')
-    geolocs = pd.read_csv('data/olist_geolocation_dataset.csv')
+    # geolocs = pd.read_csv('data/olist_geolocation_dataset.csv')
     payments = pd.read_csv('data/olist_order_payments_dataset.csv')
     products_categ_traduction = pd.read_csv('data/product_category_name_translation.csv')
     # Récupération traduction en anglais
