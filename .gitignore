@@ -121,6 +121,7 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
+
 # Pyre type checker
 .pyre/
 
@@ -130,4 +131,4 @@ cours
 img
 mlruns
 plots
-
+presentation
