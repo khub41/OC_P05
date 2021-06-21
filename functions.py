@@ -3,6 +3,7 @@
 Created on Fri Jun 11 11:01:19 2021
 
 @author: S053567
+This script has been dowloaded from OpenClassrooms' Course on Clustering in english.
 """
 
 # Library of Functions for the OpenClassrooms Multivariate Exploratory Data Analysis Course
